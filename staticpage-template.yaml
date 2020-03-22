@@ -1,0 +1,125 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: 'Static Page For Capturing Covid-19 Case Details From Geo Distributed Health Care Professionals'
+Parameters:
+    Bucketname: 
+        Description: 'Name for the bucket; must contain only lowercase letters, numbers, periods (.), and dashes'
+        Type: String
+        Default: ''
+    DefaultRootPath:
+        Description: 'Default path for the index (root) page element; relative to the root of the s3 bucket'
+        Type: String
+        Default: index.html
+    DefaultErrorPath:
+        Description: 'The path for the error page for the website; relative to the root of the s3 bucket'
+        Type: String
+        Default: /404.html
+    CacheDefaultTTL:
+        Description: 'Default cache lifetime in seconds for the CF distribution'
+        Type: Number
+        Default: 3600
+    CacheMaxTTL:
+        Description: 'Max cache lifetime in seconds for the CF distribution'
+        Type: Number
+        Default: 86400
+    CacheMinTTL:
+        Description: 'Min cache lifetime in seconds for the CF distribution'
+        Type: Number
+        Default: 60
+Resources:
+    #Create the Bucket For the Root Site
+    SiteBucket:
+        Type: 'AWS::S3::Bucket'
+        Description: "Bucket for root site"
+        DeletionPolicy: "Retain"
+        
+    CloudFrontOriginAccessIdentity:
+        Type: 'AWS::CloudFront::CloudFrontOriginAccessIdentity'
+        Properties:
+
+            CloudFrontOriginAccessIdentityConfig:
+                Comment: !Ref SiteBucket
+    
+                # Grant the CF Identity Access to the Site Bucket
+    ReadPolicy:
+        Type: 'AWS::S3::BucketPolicy'
+        Properties: 
+            Bucket: !Ref SiteBucket
+            PolicyDocument: 
+                Version: "2012-10-17"
+                Statement: 
+                    - Action: 's3:GetObject'
+                      Effect: Allow
+                      Resource: !Sub 'arn:aws:s3:::${SiteBucket}/*'
+                      Principal:
+                        CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId  
+                          
+    CloudFrontDistribution:
+        Type: 'AWS::CloudFront::Distribution'
+        Properties:
+            DistributionConfig:
+                Enabled: true
+                CustomErrorResponses:
+                    - ErrorCode: 403 # not found
+                      ResponseCode: 404
+                      ResponsePagePath: !Ref DefaultErrorPath
+                DefaultCacheBehavior:
+                    AllowedMethods:
+                    - GET
+                    - HEAD
+                    - OPTIONS
+                    CachedMethods:
+                    - GET
+                    - HEAD
+                    - OPTIONS
+                    Compress: true
+                    ForwardedValues:
+                        Cookies:
+                          Forward: none
+                        QueryString: false
+                    DefaultTTL: !Ref CacheDefaultTTL 
+                    MaxTTL: !Ref CacheMaxTTL 
+                    MinTTL: !Ref CacheMinTTL
+                    TargetOriginId: s3origin
+                    ViewerProtocolPolicy: redirect-to-https
+                DefaultRootObject: !Ref DefaultRootPath
+                HttpVersion: http2
+                Origins:
+                    - DomainName: !GetAtt 'SiteBucket.DomainName'
+                      Id: s3origin
+                      S3OriginConfig:
+                        OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
+                PriceClass: 'PriceClass_All'
+    PublishUser:
+        Type: 'AWS::IAM::User'
+        Properties:
+            Policies:
+                - PolicyName: !Sub 'publisher-role-to-${SiteBucket}'
+                  PolicyDocument:
+                    Statement: 
+                        - Action: 's3:*'
+                          Effect: Allow
+                          Resource:
+                            - !Sub 'arn:aws:s3:::${SiteBucket}'
+                            - !Sub 'arn:aws:s3:::${SiteBucket}/*'
+    PublishCreds:
+        Type: 'AWS::IAM::AccessKey'
+        Properties:
+            UserName: !Ref PublishUser
+
+Outputs:
+    BucketName:
+        Description: 'S3 Bucket Name'
+        Value: !Ref SiteBucket
+    DistributionId:
+        Description: 'CloudFront Distribution ID'
+        Value: !Ref CloudFrontDistribution
+    Domain:
+        Description: 'Cloudfront Domain'
+        Value: !GetAtt CloudFrontDistribution.DomainName
+    AccessKeyId:
+        Description: 'S3 Access Key'
+        Value: !Ref PublishCreds
+    AccessKeySecret:
+        Description: 'S3 Secret Key'
+        Value: !GetAtt PublishCreds.SecretAccessKey
