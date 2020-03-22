@@ -1,13 +1,112 @@
 version: 2.1
+jobs: 
+  create-stack:
+    executor: aws-cli/default
+    parameters: 
+      stack-name: 
+        type: string
+      template-file-path: 
+        type: string 
+
+      extra-arguments:
+        type: string
+        default: ""
+      capabilities:
+        type: string
+        default: ""
+
+      aws-access-key-id:
+        type: env_var_name
+        default: AWS_ACCESS_KEY_ID
+      
+      aws-secret-access-key:
+        type: env_var_name
+        default: AWS_SECRET_ACCESS_KEY
+
+      aws-region:
+        type: env_var_name
+        default: AWS_DEFAULT_REGION
+
+      profile-name:
+        type: string
+        default: "default"
+
+    steps: 
+      - aws-cli/setup:
+          aws-access-key-id: <<parameters.aws-access-key-id>>
+          aws-secret-access-key: <<parameters.aws-secret-access-key>>
+          aws-region: <<parameters.aws-region>>
+          profile-name: <<parameters.profile-name>>
+      
+      - checkout
+      - run: 
+          name: Create stack
+          command: |
+            aws cloudformation create-stack \
+            --stack-name <<parameters.stack-name>> \
+            --template-body file://<<parameters.template-file-path>> \
+            ${capabilities} \
+            <<parameters.extra-arguments>>
+
+  deploy-stack:
+      executor: aws-cli/default
+      parameters: 
+        stack-name: 
+          type: string
+        template-file-path: 
+          type: string 
+
+        extra-arguments:
+          type: string
+          default: ""
+        capabilities:
+          type: string
+          default: ""
+        
+        aws-access-key-id:
+          type: env_var_name
+          default: AWS_ACCESS_KEY_ID
+
+        aws-secret-access-key:
+          type: env_var_name
+          default: AWS_SECRET_ACCESS_KEY
+
+        aws-region:
+          type: env_var_name
+          default: AWS_DEFAULT_REGION
+
+        profile-name:
+          type: string
+          default: "default"
+
+      steps: 
+        - aws-cli/setup:
+            aws-access-key-id: <<parameters.aws-access-key-id>>
+            aws-secret-access-key: <<parameters.aws-secret-access-key>>
+            aws-region: <<parameters.aws-region>>
+            profile-name: <<parameters.profile-name>>
+        
+        - checkout
+        - run: 
+            name: Deploy stack
+            command: |
+              aws cloudformation deploy \
+              --stack-name <<parameters.stack-name>> \
+              --template-file <<parameters.template-file-path>> \
+              ${capabilities} \
+              ${parameter_overrides} \
+              <<parameters.extra-arguments>>
+    
+      
 
 orbs:
-  cloudformation: orbss/aws-cloudformation@0.1.6
+  aws-cli: circleci/aws-cli@0.1.22
 
 workflows:
   version: 2
   build-deploy-stack:
     jobs:      
-      - cloudformation/create-stack:
+      - create-stack:
           filters: 
             branches: 
               only: 
@@ -20,9 +119,14 @@ workflows:
           capabilities: CAPABILITY_IAM
 
 
-      - cloudformation/deploy:
+      - deploy-stack:
+          filters: 
+            branches: 
+              only: 
+                - dev 
+                - master
           requires:
-            - cloudformation/create-stack
+            - create-stack
           stack-name: stopcovid19-static-page-${CIRCLE_BRANCH}
           template-file-path: staticpage-template.yaml
           capabilities: CAPABILITY_IAM
