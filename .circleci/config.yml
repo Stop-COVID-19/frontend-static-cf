@@ -45,7 +45,7 @@ jobs:
             aws cloudformation create-stack \
             --stack-name <<parameters.stack-name>> \
             --template-body file://<<parameters.template-file-path>> \
-            ${capabilities} \
+            <<parameters.capabilities>> \
             <<parameters.extra-arguments>>
 
   deploy-stack:
@@ -93,8 +93,7 @@ jobs:
               aws cloudformation deploy \
               --stack-name <<parameters.stack-name>> \
               --template-file <<parameters.template-file-path>> \
-              ${capabilities} \
-              ${parameter_overrides} \
+              <<parameters.capabilities>> \
               <<parameters.extra-arguments>>
     
       
