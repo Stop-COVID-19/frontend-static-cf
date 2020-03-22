@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: 2010-09-09
 
 Description: 'Static Page For Capturing Covid-19 Case Details From Geo Distributed Health Care Professionals'
 Parameters:
-    Bucketname: 
+    BucketName: 
         Description: 'Name for the bucket; must contain only lowercase letters, numbers, periods (.), and dashes'
         Type: String
         Default: ''
