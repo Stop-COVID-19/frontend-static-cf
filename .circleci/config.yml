@@ -17,6 +17,8 @@ workflows:
           stack-name: stopcovid19-static-page-${CIRCLE_BRANCH}
           template-file-path: staticpage-template.yaml
           extra-arguments: --parameters ParameterKey=BucketName,ParameterValue=stopcovid19-${CIRCLE_BRANCH}
+          capabilities: CAPABILITY_IAM
+
 
       - cloudformation/deploy:
           requires:
