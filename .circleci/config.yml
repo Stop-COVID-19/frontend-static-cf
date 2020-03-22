@@ -3,9 +3,6 @@ version: 2.1
 orbs:
   cloudformation: orbss/aws-cloudformation@0.1.6
 
-
-
-
 workflows:
   version: 2
   build-deploy-stack:
@@ -20,7 +17,7 @@ workflows:
           stack-name: stopcovid19-static-page-${ENV_VARIABLE_NAME}
           template-file-path: staticpage-template.yaml
           extra-arguments: --parameters BucketName=stopcovid19
-          
+
       - cloudformation/deploy:
           requires:
             - cloudformation/create-stack
