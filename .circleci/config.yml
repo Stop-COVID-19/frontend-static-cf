@@ -42,10 +42,13 @@ jobs:
       - run: 
           name: Create stack
           command: |
+          if [ <<parameters.capabilities>> != "" ]; then
+            capabilities="--capabilities <<parameters.capabilities>>"
+          fi
             aws cloudformation create-stack \
             --stack-name <<parameters.stack-name>> \
             --template-body file://<<parameters.template-file-path>> \
-            <<parameters.capabilities>> \
+            ${capabilities} \
             <<parameters.extra-arguments>>
 
   deploy-stack:
@@ -90,10 +93,17 @@ jobs:
         - run: 
             name: Deploy stack
             command: |
+            if [ <<parameters.capabilities>> != "" ]; then
+              capabilities="--capabilities <<parameters.capabilities>>"
+            fi
+            if [ <<parameters.parameter-overrides>> != "" ]; then
+              parameter_overrides="--parameter-overrides <<parameters.parameter-overrides>>"
+            fi
               aws cloudformation deploy \
               --stack-name <<parameters.stack-name>> \
               --template-file <<parameters.template-file-path>> \
-              <<parameters.capabilities>> \
+              ${capabilities} \
+              ${parameter_overrides}
               <<parameters.extra-arguments>>
     
       
