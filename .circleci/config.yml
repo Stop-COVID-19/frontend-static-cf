@@ -42,9 +42,9 @@ jobs:
       - run: 
           name: Create stack
           command: |
-          if [ <<parameters.capabilities>> != "" ]; then
-            capabilities="--capabilities <<parameters.capabilities>>"
-          fi
+            if [ <<parameters.capabilities>> != "" ]; then
+              capabilities="--capabilities <<parameters.capabilities>>"
+            fi
             aws cloudformation create-stack \
             --stack-name <<parameters.stack-name>> \
             --template-body file://<<parameters.template-file-path>> \
@@ -65,7 +65,9 @@ jobs:
         capabilities:
           type: string
           default: ""
-        
+        parameter-overrides:
+          type: string 
+          default: ""
         aws-access-key-id:
           type: env_var_name
           default: AWS_ACCESS_KEY_ID
@@ -93,12 +95,12 @@ jobs:
         - run: 
             name: Deploy stack
             command: |
-            if [ <<parameters.capabilities>> != "" ]; then
-              capabilities="--capabilities <<parameters.capabilities>>"
-            fi
-            if [ <<parameters.parameter-overrides>> != "" ]; then
-              parameter_overrides="--parameter-overrides <<parameters.parameter-overrides>>"
-            fi
+              if [ <<parameters.capabilities>> != "" ]; then
+                capabilities="--capabilities <<parameters.capabilities>>"
+              fi
+              if [ <<parameters.parameter-overrides>> != "" ]; then
+                parameter_overrides="--parameter-overrides <<parameters.parameter-overrides>>"
+              fi
               aws cloudformation deploy \
               --stack-name <<parameters.stack-name>> \
               --template-file <<parameters.template-file-path>> \
